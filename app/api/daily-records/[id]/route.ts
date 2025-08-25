@@ -3,11 +3,12 @@ import prisma from '../../../lib/db'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const record = await prisma.dailyRecord.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!record) {
@@ -29,14 +30,15 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
     const { sales, expenses, notes } = body
 
     const existingRecord = await prisma.dailyRecord.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!existingRecord) {
@@ -49,7 +51,7 @@ export async function PUT(
     const profit = (sales || existingRecord.sales) - (expenses || existingRecord.expenses)
 
     const record = await prisma.dailyRecord.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         sales: sales !== undefined ? parseFloat(sales) : existingRecord.sales,
         expenses: expenses !== undefined ? parseFloat(expenses) : existingRecord.expenses,
@@ -70,11 +72,12 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const record = await prisma.dailyRecord.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!record) {
@@ -85,7 +88,7 @@ export async function DELETE(
     }
 
     await prisma.dailyRecord.delete({
-      where: { id: params.id }
+      where: { id }
     })
 
     return NextResponse.json({ message: 'Record deleted successfully' })
