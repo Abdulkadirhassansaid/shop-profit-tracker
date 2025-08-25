@@ -20,6 +20,8 @@ export default function Dashboard() {
   const [sales, setSales] = useState('');
   const [expenses, setExpenses] = useState('');
   const [notes, setNotes] = useState('');
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch all records
   const fetchRecords = async () => {
@@ -41,7 +43,22 @@ export default function Dashboard() {
 
   // Add new record
   const addRecord = async () => {
-    if (!date || !sales || !expenses) return;
+    setError('');
+    
+    if (!date || !sales || !expenses) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    const salesNum = parseFloat(sales);
+    const expensesNum = parseFloat(expenses);
+
+    if (isNaN(salesNum) || isNaN(expensesNum) || salesNum < 0 || expensesNum < 0) {
+      setError('Please enter valid positive numbers for sales and expenses');
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
       const response = await fetch('/api/daily-records', {
@@ -51,13 +68,16 @@ export default function Dashboard() {
         },
         body: JSON.stringify({
           date,
-          sales: parseFloat(sales),
-          expenses: parseFloat(expenses),
+          sales: salesNum,
+          expenses: expensesNum,
           notes,
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to add record');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add record');
+      }
 
       const newRecord = await response.json();
       setRecords(prev => [newRecord, ...prev]);
@@ -66,9 +86,12 @@ export default function Dashboard() {
       setSales('');
       setExpenses('');
       setNotes('');
+      setError('');
     } catch (error) {
       console.error('Error adding record:', error);
-      alert('Failed to add record. Please try again.');
+      setError(error instanceof Error ? error.message : 'Failed to add record. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -170,6 +193,14 @@ export default function Dashboard() {
             </svg>
             Add Daily Record
           </h2>
+          
+          {/* Error message display */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              {error}
+            </div>
+          )}
+          
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Date</label>
@@ -177,7 +208,8 @@ export default function Dashboard() {
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 text-sm sm:text-base"
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-base bg-white text-gray-900"
+                style={{ minHeight: '44px' }}
               />
             </div>
             <div>
@@ -185,10 +217,12 @@ export default function Dashboard() {
               <input
                 type="number"
                 step="0.01"
+                min="0"
                 value={sales}
                 onChange={(e) => setSales(e.target.value)}
                 placeholder="0.00"
-                className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200 text-sm sm:text-base"
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition duration-200 text-base bg-white text-gray-900"
+                style={{ minHeight: '44px' }}
               />
             </div>
             <div>
@@ -196,10 +230,12 @@ export default function Dashboard() {
               <input
                 type="number"
                 step="0.01"
+                min="0"
                 value={expenses}
                 onChange={(e) => setExpenses(e.target.value)}
                 placeholder="0.00"
-                className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition duration-200 text-sm sm:text-base"
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition duration-200 text-base bg-white text-gray-900"
+                style={{ minHeight: '44px' }}
               />
             </div>
             <div>
@@ -209,16 +245,18 @@ export default function Dashboard() {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Additional notes..."
-                className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 text-sm sm:text-base"
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-base bg-white text-gray-900"
+                style={{ minHeight: '44px' }}
               />
             </div>
             <div className="flex items-end">
               <button
                 onClick={addRecord}
-                disabled={!date || !sales || !expenses}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold py-2 sm:py-3 px-4 sm:px-6 rounded-lg hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                disabled={!date || !sales || !expenses || isSubmitting}
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold py-2 sm:py-3 px-4 sm:px-6 rounded-lg hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-base"
+                style={{ minHeight: '44px' }}
               >
-                Add Record
+                {isSubmitting ? 'Adding...' : 'Add Record'}
               </button>
             </div>
           </div>
