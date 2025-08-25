@@ -45,16 +45,27 @@ export default function Dashboard() {
   const addRecord = async () => {
     setError('');
     
-    if (!date || !sales || !expenses) {
-      setError('Please fill in all required fields');
+    // Validation
+    if (!date.trim()) {
+      setError('Please select a date');
+      return;
+    }
+    
+    if (!sales.trim() || !expenses.trim()) {
+      setError('Please enter both sales and expenses amounts');
       return;
     }
 
     const salesNum = parseFloat(sales);
     const expensesNum = parseFloat(expenses);
 
-    if (isNaN(salesNum) || isNaN(expensesNum) || salesNum < 0 || expensesNum < 0) {
-      setError('Please enter valid positive numbers for sales and expenses');
+    if (isNaN(salesNum) || isNaN(expensesNum)) {
+      setError('Please enter valid numbers for sales and expenses');
+      return;
+    }
+
+    if (salesNum < 0 || expensesNum < 0) {
+      setError('Sales and expenses must be positive numbers');
       return;
     }
 
@@ -67,19 +78,20 @@ export default function Dashboard() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          date,
+          date: date,
           sales: salesNum,
           expenses: expensesNum,
-          notes,
+          notes: notes.trim()
         }),
       });
 
+      const responseData = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to add record');
+        throw new Error(responseData.error || 'Failed to add record');
       }
 
-      const newRecord = await response.json();
+      const newRecord = responseData;
       setRecords(prev => [newRecord, ...prev]);
       
       // Reset form
@@ -87,9 +99,12 @@ export default function Dashboard() {
       setExpenses('');
       setNotes('');
       setError('');
+      
+      // Show success message
+      alert('Record added successfully!');
     } catch (error) {
       console.error('Error adding record:', error);
-      setError(error instanceof Error ? error.message : 'Failed to add record. Please try again.');
+      setError(error instanceof Error ? error.message : 'Failed to add record. Please check your input and try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -107,6 +122,7 @@ export default function Dashboard() {
       if (!response.ok) throw new Error('Failed to delete record');
 
       setRecords(prev => prev.filter(record => record.id !== id));
+      alert('Record deleted successfully!');
     } catch (error) {
       console.error('Error deleting record:', error);
       alert('Failed to delete record. Please try again.');
@@ -208,7 +224,7 @@ export default function Dashboard() {
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-base bg-white text-gray-900"
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-base bg-white text-gray-900 placeholder-gray-500"
                 style={{ minHeight: '44px' }}
               />
             </div>
@@ -221,7 +237,7 @@ export default function Dashboard() {
                 value={sales}
                 onChange={(e) => setSales(e.target.value)}
                 placeholder="0.00"
-                className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition duration-200 text-base bg-white text-gray-900"
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition duration-200 text-base bg-white text-gray-900 placeholder-gray-500"
                 style={{ minHeight: '44px' }}
               />
             </div>
@@ -234,7 +250,7 @@ export default function Dashboard() {
                 value={expenses}
                 onChange={(e) => setExpenses(e.target.value)}
                 placeholder="0.00"
-                className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition duration-200 text-base bg-white text-gray-900"
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition duration-200 text-base bg-white text-gray-900 placeholder-gray-500"
                 style={{ minHeight: '44px' }}
               />
             </div>
@@ -245,7 +261,7 @@ export default function Dashboard() {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Additional notes..."
-                className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-base bg-white text-gray-900"
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-base bg-white text-gray-900 placeholder-gray-500"
                 style={{ minHeight: '44px' }}
               />
             </div>
